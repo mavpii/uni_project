@@ -1,23 +1,60 @@
-body {
-    font-family: Arial, sans-serif;
+/* ======= БАЗОВІ СТИЛІ ======= */
+* {
     margin: 0;
-    background: #f2f4f8;
+    padding: 0;
+    box-sizing: border-box;
 }
 
+body {
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 0;
+    background: #f2f4f8;
+    color: #333;
+}
+
+/* ======= HEADER ======= */
 header {
     background: #4676D7;
     padding: 20px;
-    text-align: center;
     color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
 }
 
+/* ======= КОНТЕЙНЕР І FLEX ======= */
+.container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 30px;
+}
+
+/* ======= ЗОБРАЖЕННЯ ======= */
+.image-box img {
+    width: 100%;
+    max-width: 350px;
+    height: auto;
+    object-fit: cover;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+}
+
+/* ======= ФОРМА ======= */
 .form-section {
-    max-width: 400px;
-    margin: 40px auto;
+    flex: 1 1 300px;
+    max-width: 550px;
+    width: 100%;
     background: white;
-    padding: 25px;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    padding: 35px;
+    border-radius: 14px;
+    box-shadow: 0 0 12px rgba(0,0,0,0.15);
+    margin: 0 auto;
 }
 
 label {
@@ -28,10 +65,11 @@ label {
 
 input {
     width: 100%;
-    padding: 10px;
+    padding: 0.75rem;
     margin-top: 5px;
     border-radius: 6px;
     border: 1px solid #ccc;
+    font-size: 1rem;
 }
 
 button {
@@ -44,6 +82,7 @@ button {
     margin-top: 15px;
     border-radius: 6px;
     cursor: pointer;
+    transition: all 0.3s ease;
 }
 
 button:hover {
@@ -56,13 +95,78 @@ button:hover {
     text-align: center;
 }
 
+/* ======= МЕДІА-ЗАПИТИ ======= */
+
+/* Телефони */
 @media (max-width: 480px) {
+    .container {
+        flex-direction: column;
+        align-items: center;
+        padding: 15px;
+    }
+
     .form-section {
-        margin: 20px;
+        width: 100%;
         padding: 20px;
+        margin: 10px 0;
+    }
+
+    .image-box img {
+        max-width: 100%;
+        height: auto;
+    }
+
+    h1 {
+        font-size: 2rem;
     }
 
     button {
         font-size: 14px;
+    }
+
+    .theme-btn {
+        width: 60px;
+        padding: 4px;
+        font-size: 10px;
+    }
+}
+
+/* Планшети портрет */
+@media (min-width: 481px) and (max-width: 768px) {
+    .container {
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+    }
+
+    .form-section, .image-box {
+        width: 90%;
+        max-width: 500px;
+    }
+}
+
+/* Планшети альбом + маленькі десктопи */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .container {
+        width: 90%;
+        max-width: 970px;
+        margin: 0 auto;
+    }
+
+    .form-section {
+        width: 50%;
+    }
+}
+
+/* Великі десктопи */
+@media (min-width: 1200px) {
+    .container {
+        width: 70%;
+        max-width: 1170px;
+        margin: 0 auto;
+    }
+
+    .form-section {
+        width: 50%;
     }
 }
