@@ -10,25 +10,32 @@
 <body>
 
 <header>
-    <h1>Регістрація юзера</h1>
+    <h1>Реєстрація користувача</h1>
+	<button id="themeToggle" class="theme-btn">🌙 Темна тема</button>
 </header>
 
-<main>
+<main class="container">
+    <div class="image-box">
+        <img src="Screenshot_380.png" alt="Registration image">
+    </div>
+
     <section class="form-section">
         <form id="regForm">
-            <label for="name">ім’я:</label>
+            <h2>Реєстрація користувача</h2>
+
+            <label for="name">Ім’я:</label>
             <input type="text" id="name" required>
 
-            <label for="surname">прізвище:</label>
+            <label for="surname">Прізвище:</label>
             <input type="text" id="surname" required>
 
-            <label for="email">пошта:</label>
+            <label for="email">Електронна пошта:</label>
             <input type="email" id="email" required>
 
-            <label for="password">пароль:</label>
+            <label for="password">Пароль:</label>
             <input type="password" id="password" required>
 
-            <button type="submit">надіслать</button>
+            <button type="submit">Відправити</button>
         </form>
 
         <p id="message"></p>
