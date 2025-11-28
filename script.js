@@ -9,10 +9,21 @@ document.getElementById("regForm").addEventListener("submit", function(e) {
 
     if (!name || !surname || !email || !password) {
         message.style.color = "red";
-        message.textContent = "заповни всі поля!";
+        message.textContent = "Будь ласка, заповніть всі поля!";
         return;
     }
 
     message.style.color = "green";
-    message.textContent = "відправлено!";
+    message.textContent = "Форму успішно відправлено!";
+});
+
+// Перемикання теми
+const toggleBtn = document.getElementById("themeToggle");
+
+toggleBtn.addEventListener("click", () => {
+    document.body.classList.toggle("dark");
+
+    toggleBtn.textContent = document.body.classList.contains("dark")
+        ? "☀️ Світла тема"
+        : "🌙 Темна тема";
 });

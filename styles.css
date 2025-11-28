@@ -41,6 +41,27 @@ h1 {
     100% { background-position: 400% 50%; }
 }
 
+/* ======= КНОПКА ТЕМИ ======= */
+.theme-btn {
+    width: 80px;
+    padding: 4px 6px;
+    font-size: 12px;
+    border-radius: 60px;
+    background: #ffffff44;
+    color: white;
+    border: none;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    transition: background 0.3s ease;
+}
+
+.theme-btn:hover {
+    background: #ffffff66;
+}
+
 /* ======= КОНТЕЙНЕР І FLEX ======= */
 .container {
     display: flex;
@@ -109,6 +130,47 @@ button:hover {
     margin-top: 20px;
     font-weight: bold;
     text-align: center;
+}
+
+/* ======= ТЕМНА ТЕМА ======= */
+body.dark {
+    background: #1b1f27;
+    color: #e5e5e5;
+}
+
+body.dark header {
+    background: #0d6efd;
+}
+
+body.dark .form-section {
+    background: #2b303b;
+    box-shadow: 0 0 12px rgba(255,255,255,0.1);
+}
+
+body.dark input {
+    background: #3a3f4b;
+    color: white;
+    border: 1px solid #555;
+}
+
+body.dark label {
+    color: #ddd;
+}
+
+body.dark button {
+    background: #0d6efd;
+}
+
+body.dark button:hover {
+    background: #0a58ca;
+}
+
+body.dark h1 {
+    filter: brightness(1.3);
+}
+
+body.dark .image-box img {
+    box-shadow: 0 0 14px rgba(255,255,255,0.15);
 }
 
 /* ======= МЕДІА-ЗАПИТИ ======= */
