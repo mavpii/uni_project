@@ -1,48 +1,133 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мавпи</title>
-
-    <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Snake Arena 2D</title>
+    <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
 <header>
-    <h1>Реєстрація користувача</h1>
-	<button id="themeToggle" class="theme-btn">🌙 Темна тема</button>
+    <h1>SNAKE ARENA 2D!</h1>
+    <button id="themeToggle" class="theme-btn">🌙 Темна тема</button>
+
+    <!-- Блок з користувачем (аватар + текст) -->
+    <div id="userInfo" class="user-info"></div>
+
+    <!-- Прихований інпут для завантаження аватара -->
+    <input type="file" id="avatarInput" accept="image/*" class="hidden" />
+
+    <!-- Меню користувача -->
+    <div id="userMenu" class="user-menu hidden">
+    <button id="changeNameBtn" type="button">Змінити ім’я</button>
+    <button id="changeAvatarBtn" type="button">Змінити аватар</button>
+    <button id="logoutBtn" type="button" class="logout-btn">Вийти</button>
+</div>
+
 </header>
 
-<main class="container">
-    <div class="image-box">
-        <img src="Screenshot_380.png" alt="Registration image">
+<!-- ====== СЕКЦІЯ АВТОРИЗАЦІЇ ====== -->
+<main id="authSection" class="container auth-container">
+
+    <div class="image-box auth-image">
+        <img src="Screenshot_380.png" alt="Monkey Image" />
     </div>
 
-    <section class="form-section">
-        <form id="regForm">
-            <h2>Реєстрація користувача</h2>
+    <section class="form-section" id="authCard">
+        <h2 id="authTitle">Вхід</h2>
 
-            <label for="name">Ім’я:</label>
-            <input type="text" id="name" required>
+        <!-- Форма входу -->
+        <form id="loginForm">
+            <label for="loginEmail">Електронна пошта:</label>
+            <input type="email" id="loginEmail" required />
 
-            <label for="surname">Прізвище:</label>
-            <input type="text" id="surname" required>
+            <label for="loginPassword">Пароль:</label>
+            <input type="password" id="loginPassword" required />
+
+            <button type="submit">Увійти</button>
+        </form>
+
+        <!-- Форма реєстрації -->
+        <form id="regForm" class="hidden">
+            <label for="nickname">Нікнейм:</label>
+            <input type="text" id="nickname" required />
 
             <label for="email">Електронна пошта:</label>
-            <input type="email" id="email" required>
+            <input type="email" id="email" required />
 
             <label for="password">Пароль:</label>
-            <input type="password" id="password" required>
+            <input type="password" id="password" required />
 
-            <button type="submit">Відправити</button>
+            <button type="submit">Зареєструватися</button>
         </form>
+
+        <p class="auth-toggle">
+            <span id="authToggleText">Немає акаунту?</span>
+            <button type="button" id="authToggleBtn" class="link-button">
+                Зареєструватися
+            </button>
+        </p>
 
         <p id="message"></p>
     </section>
 </main>
 
-<script src="script.js"></script>
+<!-- ====== СЕКЦІЯ ГРИ ====== -->
+<main id="gameSection" class="game-container hidden">
 
+    <!-- Лідерборд -->
+    <section class="leaderboard-panel">
+        <h2>Таблиця лідерів</h2>
+        <ol id="leaderboardList"></ol>
+        <p id="userRank" class="user-rank"></p>
+    </section>
+
+    <!-- Панель гри -->
+    <section class="game-panel">
+        <div class="game-controls">
+            <div class="top-row">
+                <button id="startGameBtn" type="button">▶️ Почати гру</button>
+                <button id="pauseGameBtn" type="button">⏸️ Пауза</button>
+            </div>
+
+            <div class="bottom-row">
+                <span id="currentScore">Рахунок: 0</span>
+                <span id="bestScore">Рекорд: 0</span>
+            </div>
+
+            <div class="score-progress">
+                <div id="scoreProgressFill"></div>
+            </div>
+        </div>
+
+        <p class="controls-hint">
+            Керування: WASD або ↑↓←→ • Пауза: Space
+        </p>
+
+        <div id="battleArea" class="battle-area"></div>
+    </section>
+</main>
+
+<!-- Модальне вікно поразки -->
+<div id="gameOverOverlay" class="modal-overlay hidden">
+    <div class="modal-window">
+        <h3>Гру закінчено</h3>
+        <p id="gameOverText"></p>
+        <button id="gameOverOkBtn" type="button">ОК</button>
+    </div>
+</div>
+
+<!-- Модалка зміни імені -->
+<div id="changeNameOverlay" class="modal-overlay hidden">
+    <div class="modal-window">
+        <h3>Змінити ім’я</h3>
+        <input id="newNameInput" type="text" placeholder="Введіть нове ім’я" />
+        <button id="saveNewNameBtn" type="button">Зберегти</button>
+    </div>
+</div>
+
+
+<script src="script.js"></script>
 </body>
 </html>
