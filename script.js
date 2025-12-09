@@ -1,75 +1,39 @@
 // ==================== КОНСТАНТИ ====================
 
-const USERS_KEY = "snake_users";
-const SCORES_KEY = "snake_scores";
+// Бекенд на Node.js + Express
+const API_BASE = "http://localhost:3000/api";
+
 const THEME_KEY = "snake_theme";
 
-let currentUser = null;
-let bestBeforeGame = 0; // рекорд перед стартом поточної гри
+let currentUser = null;      // { id, email, nickname, bestScore, avatar }
+let currentUserId = null;
+let bestBeforeGame = 0;      // рекорд перед стартом поточної гри
 
-// ==================== КЕШ ДЛЯ localStorage ====================
+// ==================== ДОПОМІЖНІ ФУНКЦІЇ ДЛЯ API ====================
 
-let USERS_CACHE = null;
-let SCORES_CACHE = null;
-
-function loadUsers() {
-    if (USERS_CACHE) return USERS_CACHE;
-    try {
-        USERS_CACHE = JSON.parse(localStorage.getItem(USERS_KEY)) || [];
-    } catch (e) {
-        USERS_CACHE = [];
-    }
-    return USERS_CACHE;
-}
-
-function saveUsers(users) {
-    USERS_CACHE = users;
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
-
-function loadScores() {
-    if (SCORES_CACHE) return SCORES_CACHE;
-    try {
-        SCORES_CACHE = JSON.parse(localStorage.getItem(SCORES_KEY)) || [];
-    } catch (e) {
-        SCORES_CACHE = [];
-    }
-    return SCORES_CACHE;
-}
-
-function saveScores(scores) {
-    SCORES_CACHE = scores;
-    localStorage.setItem(SCORES_KEY, JSON.stringify(scores));
-}
-
-function addScore(score) {
-    if (!currentUser || score <= 0) return;
-    const scores = loadScores();
-    scores.push({
-        email: currentUser.email,
-        nickname: currentUser.nickname,
-        score,
-        createdAt: new Date().toISOString()
+async function apiPost(path, bodyObj) {
+    const res = await fetch(`${API_BASE}${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bodyObj)
     });
-    saveScores(scores);
-    updateLeaderboard();
-}
-
-function updateUserBestScore(score) {
-    if (!currentUser) return;
-    const users = loadUsers();
-    const idx = users.findIndex((u) => u.email === currentUser.email);
-    if (idx !== -1) {
-        users[idx].bestScore = Math.max(users[idx].bestScore || 0, score);
-        currentUser = users[idx];
-        saveUsers(users);
+    const data = await res.json();
+    if (!res.ok) {
+        throw new Error(data.error || "Помилка запиту");
     }
-    renderUserInfo();
-    updateBestScoreLabel();
-    updateLeaderboard();
+    return data;
 }
 
-// ==================== АВАТАРКИ ====================
+async function apiGet(path) {
+    const res = await fetch(`${API_BASE}${path}`);
+    const data = await res.json();
+    if (!res.ok) {
+        throw new Error(data.error || "Помилка запиту");
+    }
+    return data;
+}
+
+// ==================== АВАТАРКИ (UI) ====================
 
 function stringToColor(str) {
     let hash = 0;
@@ -136,10 +100,6 @@ const changeNameOverlay = document.getElementById("changeNameOverlay");
 const newNameInput = document.getElementById("newNameInput");
 const saveNewNameBtn = document.getElementById("saveNewNameBtn");
 
-
-
-
-
 // ==================== ТЕМА ====================
 
 toggleBtn.addEventListener("click", () => {
@@ -157,6 +117,7 @@ const authToggleBtn = document.getElementById("authToggleBtn");
 
 let isLoginMode = true;
 
+// Перемикач Вхід / Реєстрація
 authToggleBtn.addEventListener("click", () => {
     if (isLoginMode) {
         loginForm.classList.add("hidden");
@@ -164,7 +125,7 @@ authToggleBtn.addEventListener("click", () => {
         authTitle.textContent = "Реєстрація";
         authToggleText.textContent = "Вже маєте акаунт?";
         authToggleBtn.textContent = "Увійти";
-        if (messageEl) messageEl.textContent = "";
+        messageEl.textContent = "";
         isLoginMode = false;
     } else {
         regForm.classList.add("hidden");
@@ -172,12 +133,19 @@ authToggleBtn.addEventListener("click", () => {
         authTitle.textContent = "Вхід";
         authToggleText.textContent = "Немає акаунту?";
         authToggleBtn.textContent = "Зареєструватися";
-        if (messageEl) messageEl.textContent = "";
+        messageEl.textContent = "";
         isLoginMode = true;
     }
 });
 
-regForm.addEventListener("submit", (e) => {
+function showMessage(text, color = "black") {
+    if (!messageEl) return;
+    messageEl.style.color = color;
+    messageEl.textContent = text;
+}
+
+// Реєстрація → бекенд
+regForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     const nickname = document.getElementById("nickname").value.trim();
@@ -189,33 +157,27 @@ regForm.addEventListener("submit", (e) => {
         return;
     }
 
-    const users = loadUsers();
-    if (users.some((u) => u.email === email)) {
-        showMessage(
-            "Користувач з такою електронною поштою вже існує. Увійдіть або використайте іншу пошту.",
-            "red"
-        );
-        return;
+    try {
+        const user = await apiPost("/register", { nickname, email, password });
+        currentUser = {
+            id: user.id,
+            email: user.email,
+            nickname: user.nickname,
+            bestScore: user.bestScore || 0,
+            avatar: user.avatar || null
+        };
+        currentUserId = user.id;
+
+        showMessage("Реєстрація успішна! Ви увійшли в систему.", "green");
+        renderUserInfo();
+        switchToGame();
+    } catch (err) {
+        showMessage(err.message, "red");
     }
-
-    const newUser = {
-        nickname,
-        email,
-        password,
-        bestScore: 0,
-        avatar: null
-    };
-
-    users.push(newUser);
-    saveUsers(users);
-
-    currentUser = newUser;
-    showMessage("Реєстрація успішна! Ви увійшли в систему.", "green");
-    renderUserInfo();
-    switchToGame();
 });
 
-loginForm.addEventListener("submit", (e) => {
+// Вхід → бекенд
+loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     const email = document.getElementById("loginEmail").value.trim().toLowerCase();
@@ -226,25 +188,24 @@ loginForm.addEventListener("submit", (e) => {
         return;
     }
 
-    const users = loadUsers();
-    const user = users.find((u) => u.email === email && u.password === password);
+    try {
+        const user = await apiPost("/login", { email, password });
+        currentUser = {
+            id: user.id,
+            email: user.email,
+            nickname: user.nickname,
+            bestScore: user.bestScore || 0,
+            avatar: user.avatar || null
+        };
+        currentUserId = user.id;
 
-    if (!user) {
-        showMessage("Невірна електронна пошта або пароль.", "red");
-        return;
+        showMessage("Вхід успішний! Ласкаво просимо.", "green");
+        renderUserInfo();
+        switchToGame();
+    } catch (err) {
+        showMessage(err.message, "red");
     }
-
-    currentUser = user;
-    showMessage("Вхід успішний! Ласкаво просимо.", "green");
-    renderUserInfo();
-    switchToGame();
 });
-
-function showMessage(text, color = "black") {
-    if (!messageEl) return;
-    messageEl.style.color = color;
-    messageEl.textContent = text;
-}
 
 function renderUserInfo() {
     if (!currentUser) {
@@ -283,15 +244,16 @@ document.addEventListener("click", (e) => {
     }
 });
 
+// Зміна аватара (не при реєстрації)
 changeAvatarBtn.addEventListener("click", () => {
     if (!currentUser) return;
     avatarInput.click();
     userMenu.classList.add("hidden");
 });
 
-avatarInput.addEventListener("change", (e) => {
+avatarInput.addEventListener("change", async (e) => {
     const file = e.target.files[0];
-    if (!file || !currentUser) {
+    if (!file || !currentUserId) {
         avatarInput.value = "";
         return;
     }
@@ -303,21 +265,21 @@ avatarInput.addEventListener("change", (e) => {
     }
 
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
         const dataUrl = evt.target.result;
 
-        const users = loadUsers();
-        const idx = users.findIndex((u) => u.email === currentUser.email);
-        if (idx !== -1) {
-            users[idx].avatar = dataUrl;
-            currentUser = users[idx];
-            saveUsers(users);
-        } else {
-            currentUser.avatar = dataUrl;
-        }
+        try {
+            const user = await apiPost("/change-avatar", {
+                userId: currentUserId,
+                avatar: dataUrl
+            });
 
-        renderUserInfo();
-        updateLeaderboard();
+            currentUser.avatar = user.avatar || null;
+            renderUserInfo();
+            updateLeaderboard();
+        } catch (err) {
+            showMessage(err.message, "red");
+        }
     };
 
     reader.readAsDataURL(file);
@@ -326,6 +288,7 @@ avatarInput.addEventListener("change", (e) => {
 
 logoutBtn.addEventListener("click", () => {
     currentUser = null;
+    currentUserId = null;
     userMenu.classList.add("hidden");
     gameSection.classList.add("hidden");
     authSection.classList.remove("hidden");
@@ -333,79 +296,52 @@ logoutBtn.addEventListener("click", () => {
     showMessage("");
 });
 
+// ==================== ЛІДЕРБОРД (MySQL) ====================
 
+async function updateLeaderboard() {
+    try {
+        const records = await apiGet("/leaderboard");
+        leaderboardList.innerHTML = "";
 
-// ==================== ЛІДЕРБОРД ====================
-
-function updateLeaderboard() {
-    const scores = loadScores();
-    const users = loadUsers();
-
-    const bestByEmail = {};
-    for (let i = 0, len = scores.length; i < len; i++) {
-        const rec = scores[i];
-        const email = rec.email;
-        if (!email) continue;
-        const existing = bestByEmail[email];
-        if (!existing || rec.score > existing.score) {
-            bestByEmail[email] = rec;
-        }
-    }
-
-    const allRecords = Object.values(bestByEmail);
-    allRecords.sort((a, b) => b.score - a.score);
-
-    const top = allRecords.slice(0, 10);
-    const totalPlayers = allRecords.length;
-
-    leaderboardList.innerHTML = "";
-    if (top.length === 0) {
-        const li = document.createElement("li");
-        li.textContent = "Поки що немає результатів.";
-        leaderboardList.appendChild(li);
-    } else {
-        for (let i = 0, len = top.length; i < len; i++) {
-            const record = top[i];
+        if (!records.length) {
             const li = document.createElement("li");
+            li.textContent = "Поки що немає результатів.";
+            leaderboardList.appendChild(li);
+            userRankEl.textContent = "";
+            return;
+        }
 
-            const user = users.find((u) => u.email === record.email);
-            const avatarUrl = user?.avatar || null;
-            const isSelf = currentUser && record.email === currentUser.email;
+        records.forEach((rec) => {
+            const li = document.createElement("li");
+            const isSelf = currentUserId && rec.userId === currentUserId;
 
             const avatarHTML = renderAvatarHTML(
-                record.nickname,
+                rec.nickname,
                 "avatar-leader",
-                avatarUrl
+                rec.avatar || null
             );
 
             li.innerHTML = `
                 ${avatarHTML}
-                <span class="leader-name">${record.nickname}${
+                <span class="leader-name">${rec.nickname}${
                 isSelf ? '<span class="leader-self-badge">Ви</span>' : ""
             }</span>
-                <span class="leader-score">${record.score}</span>
+                <span class="leader-score">${rec.score}</span>
             `;
 
-            if (isSelf) {
-                li.classList.add("leader-self");
-            }
-
+            if (isSelf) li.classList.add("leader-self");
             leaderboardList.appendChild(li);
-        }
-    }
+        });
 
-    if (currentUser && totalPlayers > 0) {
-        const idx = allRecords.findIndex(
-            (r) => r.email === currentUser.email
-        );
+        // місце користувача
+        const idx = records.findIndex((r) => r.userId === currentUserId);
         if (idx !== -1) {
-            const place = idx + 1;
-            userRankEl.textContent = `Ваше місце: ${place} з ${totalPlayers}`;
+            userRankEl.textContent = `Ваше місце: ${idx + 1} з ${records.length}`;
         } else {
             userRankEl.textContent = "";
         }
-    } else {
-        userRankEl.textContent = "";
+    } catch (err) {
+        console.error(err);
     }
 }
 
@@ -424,35 +360,34 @@ function updateScoreProgress() {
     scoreProgressFill.style.width = percent + "%";
 }
 
+// ==================== ЗМІНА ІМЕНІ (через бекенд) ====================
+
 changeNameBtn.addEventListener("click", () => {
-    newNameInput.value = currentUser?.nickname || "";
+    if (!currentUser) return;
+    newNameInput.value = currentUser.nickname || "";
     changeNameOverlay.classList.remove("hidden");
 });
 
-
-saveNewNameBtn.addEventListener("click", () => {
+saveNewNameBtn.addEventListener("click", async () => {
     const newName = newNameInput.value.trim();
-    if (!newName) return;
+    if (!newName || !currentUserId) return;
 
-    const users = loadUsers();
-    const idx = users.findIndex(u => u.email === currentUser.email);
+    try {
+        const user = await apiPost("/change-name", {
+            userId: currentUserId,
+            newName
+        });
 
-    if (idx !== -1) {
-        users[idx].nickname = newName;
-        currentUser.nickname = newName;
-        saveUsers(users);
+        currentUser.nickname = user.nickname;
+        renderUserInfo();
+        updateLeaderboard();
+        changeNameOverlay.classList.add("hidden");
+    } catch (err) {
+        showMessage(err.message, "red");
     }
-
-    // Оновлення всіх місць, де використовується ім’я
-    renderUserInfo();
-    updateLeaderboard();
-
-    changeNameOverlay.classList.add("hidden");
 });
 
-
-
-changeNameOverlay.addEventListener("click", e => {
+changeNameOverlay.addEventListener("click", (e) => {
     if (e.target === changeNameOverlay) {
         changeNameOverlay.classList.add("hidden");
     }
@@ -467,7 +402,6 @@ let ESY;
 
 let nodeArray = []; // [{ nodeElement, x, y }, ...]
 
-// ExitStone поки на майбутнє
 let isExitStoneIntervalExists = false;
 let ExitStoneInterval = null;
 
@@ -482,11 +416,10 @@ let Score = 0;
 let maxScore = 0;
 let snakeHitLose = false;
 let pause = false;
-let Move = null; // setInterval id
+let Move = null;
 
-let isRunning = false; // чи запущена гра (йде цикл)
-let isPaused = false;  // чи зараз пауза
-
+let isRunning = false;
+let isPaused = false;
 
 function initMaxScore() {
     maxScore = currentUser?.bestScore || 0;
@@ -518,7 +451,6 @@ function PowerStoneRandomGeneration() {
 }
 
 function PickStone() {
-    // координати кратні 20, тому достатньо == без складних перевірок
     if (PosX === PowerStoneRMx && PosY === PowerStoneRMy) {
         PowerStoneRandomGeneration();
         Score++;
@@ -541,18 +473,23 @@ function PickExitStone() {
 
 function Lose() {
     if (PosX >= 400 || PosX < 0 || PosY >= 400 || PosY < 0 || snakeHitLose) {
-        if (Score > maxScore) {
-            maxScore = Score;
+        const prevBest = currentUser?.bestScore || 0;
+        const isNewRecord = currentUser && Score > prevBest;
+
+        if (currentUser && Score > prevBest) {
+            currentUser.bestScore = Score;
         }
 
-        const isNewRecord = currentUser && Score > bestBeforeGame;
-
-        updateUserBestScore(Score);
-        addScore(Score);
+        updateBestScoreLabel();
 
         if (Move) {
             clearInterval(Move);
             Move = null;
+        }
+
+        // зберігаємо результат на сервер
+        if (Score > 0 && currentUserId) {
+            saveScoreToServer(Score);
         }
 
         battleArea.classList.add("death-flash");
@@ -566,9 +503,9 @@ function Lose() {
 
 function showGameOver(isNewRecord) {
     if (isNewRecord) {
-        gameOverText.textContent = `Новий рекорд! Ваш рахунок: ${Score}. Новий рекорд: ${maxScore}`;
+        gameOverText.textContent = `Новий рекорд! Ваш рахунок: ${Score}. Новий рекорд: ${currentUser.bestScore}`;
     } else {
-        gameOverText.textContent = `Ви програли. Ваш рахунок: ${Score}. Поточний рекорд: ${maxScore}`;
+        gameOverText.textContent = `Ви програли. Ваш рахунок: ${Score}. Поточний рекорд: ${currentUser?.bestScore || 0}`;
     }
     gameOverOverlay.classList.remove("hidden");
 
@@ -576,6 +513,18 @@ function showGameOver(isNewRecord) {
         gameOverOverlay.classList.add("hidden");
         resetGameState();
     };
+}
+
+async function saveScoreToServer(score) {
+    try {
+        await apiPost("/score", {
+            userId: currentUserId,
+            score
+        });
+        updateLeaderboard();
+    } catch (err) {
+        console.error(err);
+    }
 }
 
 // ==================== КЕРУВАННЯ ====================
@@ -600,15 +549,12 @@ function pressPause(event) {
 pauseGameBtn.addEventListener("click", togglePause);
 
 function togglePause() {
-    // Якщо гра ще не запущена – нічого не робимо
     if (!isRunning) return;
 
     if (!isPaused) {
-        // Стаємо на паузу
         clearInterval(Move);
         isPaused = true;
     } else {
-        // Продовжуємо з паузи
         Move = setInterval(gameTick, 120);
         isPaused = false;
     }
@@ -625,18 +571,15 @@ function gameTick() {
     Lose();
 }
 
-// рух змійки з числовими координатами
 function MoveTestXY() {
     const len = nodeArray.length;
     if (!len) return;
 
-    // хвіст бере координати попередніх сегментів
     for (let i = len - 1; i > 0; i--) {
         nodeArray[i].x = nodeArray[i - 1].x;
         nodeArray[i].y = nodeArray[i - 1].y;
     }
 
-    // голова
     if (Side === "top") {
         PosY -= 20;
     } else if (Side === "down") {
@@ -650,7 +593,6 @@ function MoveTestXY() {
     nodeArray[0].x = PosX;
     nodeArray[0].y = PosY;
 
-    // перевірка зіткнення з тілом
     snakeHitLose = false;
     const headX = nodeArray[0].x;
     const headY = nodeArray[0].y;
@@ -661,7 +603,6 @@ function MoveTestXY() {
         }
     }
 
-    // одна синхронізація DOM
     for (let i = 0; i < len; i++) {
         const seg = nodeArray[i];
         const el = seg.nodeElement;
@@ -743,8 +684,6 @@ function resetGameState() {
     initSnake();
 }
 
-
-// запуск гри
 startGameBtn.addEventListener("click", () => {
     if (!currentUser) {
         showMessage("Спочатку увійдіть або зареєструйтесь.", "red");
@@ -759,7 +698,6 @@ startGameBtn.addEventListener("click", () => {
     isRunning = true;
     isPaused = false;
 });
-
 
 // ==================== ІНІЦІАЛІЗАЦІЯ ====================
 
