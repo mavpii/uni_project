@@ -78,10 +78,26 @@
 
     <!-- Лідерборд -->
     <section class="leaderboard-panel">
-        <h2>Таблиця лідерів</h2>
-        <ol id="leaderboardList"></ol>
-        <p id="userRank" class="user-rank"></p>
-    </section>
+    <h2>Таблиця лідерів</h2>
+
+    
+<div class="leaderboard-controls">
+    <label>
+        Сортування:
+        <select id="sortSelect">
+            <option value="score_desc" selected>За очками ↓</option>
+            <option value="score_asc">За очками ↑</option>
+            <option value="name_asc">За ім'ям A→Z</option>
+            <option value="name_desc">За ім'ям Z→A</option>
+        </select>
+    </label>
+</div>
+
+
+    <ol id="leaderboardList"></ol>
+    <p id="userRank" class="user-rank"></p>
+</section>
+
 
     <!-- Панель гри -->
     <section class="game-panel">

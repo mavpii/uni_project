@@ -76,6 +76,9 @@ const gameSection = document.getElementById("gameSection");
 const leaderboardList = document.getElementById("leaderboardList");
 const userRankEl = document.getElementById("userRank");
 
+// селект сортування (єдиний контрол у лідерборді)
+const sortSelect = document.getElementById("sortSelect");
+
 const startGameBtn = document.getElementById("startGameBtn");
 const pauseGameBtn = document.getElementById("pauseGameBtn");
 const currentScoreEl = document.getElementById("currentScore");
@@ -296,52 +299,74 @@ logoutBtn.addEventListener("click", () => {
     showMessage("");
 });
 
-// ==================== ЛІДЕРБОРД (MySQL) ====================
+// ==================== ЛІДЕРБОРД (MySQL, сортування) ====================
 
 async function updateLeaderboard() {
     try {
-        const records = await apiGet("/leaderboard");
+        // значення типу "score_desc", "name_asc" і т.д.
+        const sortValue = (sortSelect && sortSelect.value) || "score_desc";
+        const [sortKey, order] = sortValue.split("_");
+
+        // на бекенд віддаємо зрозумілі значення
+        const sortBy = sortKey === "name" ? "name" : "score";
+        const sortOrder = order === "asc" ? "asc" : "desc";
+
+        const params = new URLSearchParams({
+            sortBy,
+            order: sortOrder
+        });
+
+        // /api/users?sortBy=score&order=desc
+        const users = await apiGet(`/users?${params.toString()}`);
+
         leaderboardList.innerHTML = "";
 
-        if (!records.length) {
-            const li = document.createElement("li");
-            li.textContent = "Поки що немає результатів.";
-            leaderboardList.appendChild(li);
+        if (!users.length) {
+            leaderboardList.innerHTML = "<li>Немає користувачів.</li>";
             userRankEl.textContent = "";
             return;
         }
 
-        records.forEach((rec) => {
+        users.forEach((user) => {
             const li = document.createElement("li");
-            const isSelf = currentUserId && rec.userId === currentUserId;
+            const isSelf = currentUserId && user.id === currentUserId;
 
             const avatarHTML = renderAvatarHTML(
-                rec.nickname,
+                user.nickname,
                 "avatar-leader",
-                rec.avatar || null
+                user.avatar_url || null
             );
+
+            const score = user.best_score ?? 0;
 
             li.innerHTML = `
                 ${avatarHTML}
-                <span class="leader-name">${rec.nickname}${
-                isSelf ? '<span class="leader-self-badge">Ви</span>' : ""
-            }</span>
-                <span class="leader-score">${rec.score}</span>
+                <span class="leader-name">
+                    ${user.nickname}
+                    ${isSelf ? '<span class="leader-self-badge">Ви</span>' : ""}
+                </span>
+                <span class="leader-score">${score}</span>
             `;
 
             if (isSelf) li.classList.add("leader-self");
             leaderboardList.appendChild(li);
         });
 
-        // місце користувача
-        const idx = records.findIndex((r) => r.userId === currentUserId);
-        if (idx !== -1) {
-            userRankEl.textContent = `Ваше місце: ${idx + 1} з ${records.length}`;
+        // місце користувача у відсортованому списку
+        if (currentUserId) {
+            const idx = users.findIndex((u) => u.id === currentUserId);
+            if (idx !== -1) {
+                userRankEl.textContent = `Ваше місце: ${idx + 1} з ${users.length}`;
+            } else {
+                userRankEl.textContent = "";
+            }
         } else {
             userRankEl.textContent = "";
         }
     } catch (err) {
         console.error(err);
+        leaderboardList.innerHTML = "<li>Помилка завантаження.</li>";
+        userRankEl.textContent = "";
     }
 }
 
@@ -708,6 +733,10 @@ startGameBtn.addEventListener("click", () => {
         toggleBtn.textContent = "☀️ Світла тема";
     } else {
         toggleBtn.textContent = "🌙 Темна тема";
+    }
+
+    if (sortSelect) {
+        sortSelect.addEventListener("change", updateLeaderboard);
     }
 
     updateLeaderboard();

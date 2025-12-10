@@ -12,8 +12,8 @@ const __dirname = path.dirname(__filename);
 
 const pool = mysql.createPool({
   host: "localhost",
-  user: "root",      // ЗАМІНИ на свій логін
-  password: "1234",      // ЗАМІНИ на свій пароль
+  user: "root",        // свій логін
+  password: "1234",    // свій пароль
   database: "snake_arena",
   waitForConnections: true,
   connectionLimit: 10
@@ -29,8 +29,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "../public")));
 
-// Простий "токен" = id користувача, який фронт зберігає в localStorage.
-// У реальному додатку треба робити JWT / сесії, але для практики достатньо.
+// ---------------------- HELPERS ----------------------
 
 async function getUserByEmail(email) {
   const [rows] = await pool.query("SELECT * FROM users WHERE email = ?", [
@@ -140,7 +139,7 @@ app.post("/api/change-name", async (req, res) => {
   }
 });
 
-// (за бажанням) зміна аватара – тут лише URL/ dataURL
+// Зміна аватара (URL / dataURL)
 app.post("/api/change-avatar", async (req, res) => {
   try {
     const { userId, avatar } = req.body;
@@ -193,7 +192,7 @@ app.post("/api/score", async (req, res) => {
   }
 });
 
-// Лідерборд (найкращий результат кожного користувача)
+// Старий лідерборд (можна залишити, якщо десь ще використовується)
 app.get("/api/leaderboard", async (req, res) => {
   try {
     const [rows] = await pool.query(
@@ -212,6 +211,34 @@ app.get("/api/leaderboard", async (req, res) => {
         score: u.best_score
       }))
     );
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Помилка сервера" });
+  }
+});
+
+// НОВИЙ ендпоінт: список користувачів з сортуванням
+// /api/users?sortBy=score|name&order=asc|desc
+app.get("/api/users", async (req, res) => {
+  try {
+    let { sortBy = "score", order = "desc" } = req.query;
+
+    // Біла листа полів сортування
+    let orderByClause = "best_score";
+    if (sortBy === "name") {
+      orderByClause = "nickname";
+    }
+
+    // порядок
+    order = order.toLowerCase() === "asc" ? "ASC" : "DESC";
+
+    const [rows] = await pool.query(
+      `SELECT id, email, nickname, avatar_url, best_score
+       FROM users
+       ORDER BY ${orderByClause} ${order}`
+    );
+
+    res.json(rows);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Помилка сервера" });
