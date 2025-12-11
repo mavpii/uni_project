@@ -247,6 +247,12 @@ app.get("/api/users", async (req, res) => {
 
 // ---------------------- START ----------------------
 
-app.listen(PORT, () => {
-  console.log(`Server listening on http://localhost:${PORT}`);
-});
+// запускати сервер тільки якщо ми НЕ в тестах
+if (process.env.NODE_ENV !== "test") {
+  app.listen(PORT, () => {
+    console.log(`Server listening on http://localhost:${PORT}`);
+  });
+}
+
+// обовʼязково: експорт app для supertest / Jest
+export default app;
